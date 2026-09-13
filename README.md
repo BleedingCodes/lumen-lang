@@ -12,6 +12,7 @@ libraries, no shortcuts.
 
 ## What It Is
 
+Built with AI assistance as a learning exercise in language implementation.
 Lumen is a dynamically typed, expression-oriented language with:
 
 - **Lexer** — hand-written scanner with line/column tracking and clean error reporting
