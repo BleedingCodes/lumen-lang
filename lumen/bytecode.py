@@ -68,15 +68,43 @@ class Chunk:
 
 
 def disassemble(chunk: Chunk, name: str = "<script>") -> str:
+    """Disassemble *chunk* to a human-readable string.
+
+    Nested ``FunctionProto`` objects found in the constant pool are
+    disassembled recursively so that inner functions are fully visible.
+    """
     lines = [f"== {name} =="]
 
     for offset, instruction in enumerate(chunk.code):
-        operand = "" if instruction.operand is None else f" {instruction.operand!r}"
-        lines.append(f"{offset:04d} {instruction.op.name:<18}{operand}")
+        if instruction.operand is None:
+            operand_str = ""
+        else:
+            # Show FunctionProto constants as a brief label, not their repr.
+            from .compiler import FunctionProto  # local import to avoid circular
+            if isinstance(instruction.operand, int) and instruction.op is Op.CLOSURE:
+                const = chunk.constants[instruction.operand]
+                if hasattr(const, "name"):
+                    operand_str = f" {instruction.operand}  <fn {const.name}>"
+                else:
+                    operand_str = f" {instruction.operand!r}"
+            else:
+                operand_str = f" {instruction.operand!r}"
+        lines.append(f"{offset:04d} {instruction.op.name:<18}{operand_str}")
 
     if chunk.constants:
         lines.append("-- constants --")
+        nested: list[str] = []
         for index, value in enumerate(chunk.constants):
-            lines.append(f"{index:04d} {value!r}")
+            from .compiler import FunctionProto  # local import
+            if isinstance(value, FunctionProto):
+                lines.append(f"{index:04d} <fn {value.name}>")
+                nested.append(disassemble(value.chunk, value.name))
+            else:
+                lines.append(f"{index:04d} {value!r}")
+
+        # Append all nested function disassembly after the constant table.
+        for block in nested:
+            lines.append("")
+            lines.append(block)
 
     return "\n".join(lines)
