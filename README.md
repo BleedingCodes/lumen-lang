@@ -148,15 +148,26 @@ Lumen can print the compiled bytecode for any program. Example output for a
 counter closure:
 
 ```
-== make_counter ==
-0000  OP_GET_LOCAL     1
-0002  OP_CONSTANT      0  '1'
-0004  OP_ADD
-0005  OP_SET_UPVALUE   0
-...
 == <script> ==
-0000  OP_CLOSURE       0  <fn make_counter>
-0003  OP_DEFINE_LOCAL
+0000 CLOSURE            0  <fn make_counter>
+0001 DEFINE_GLOBAL      1
+...
+
+== make_counter ==
+0000 GET_LOCAL          1
+0001 CLOSURE            0  <fn next>
+0002 GET_LOCAL          3
+0003 RETURN
+...
+
+== next ==
+0000 GET_UPVALUE        0
+0001 CONSTANT           0
+0002 ADD
+0003 SET_UPVALUE        0
+0004 POP
+0005 GET_UPVALUE        0
+0006 RETURN
 ...
 ```
 
