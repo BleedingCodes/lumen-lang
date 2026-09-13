@@ -56,7 +56,7 @@ class VM:
                 "print": Native("print", None, self._native_print),
                 "clock": Native("clock", 0, lambda: time.time()),
                 "len": Native("len", 1, len),
-                "type": Native("type", 1, lambda value: type(value).__name__),
+                "type": Native("type", 1, self._native_type),
                 "range": Native("range", None, lambda *args: list(range(*args))),
             }
         )
@@ -255,6 +255,41 @@ class VM:
         return value is not None and value is not False
 
     @staticmethod
+    def _native_type(value: object) -> str:
+        """Return Lumen type name for a runtime value."""
+        if value is None:
+            return "null"
+        if isinstance(value, bool):
+            return "bool"
+        if isinstance(value, int):
+            return "int"
+        if isinstance(value, float):
+            return "float"
+        if isinstance(value, str):
+            return "string"
+        if isinstance(value, list):
+            return "list"
+        if isinstance(value, dict):
+            return "dict"
+        if isinstance(value, (Closure, Native)):
+            return "function"
+        return type(value).__name__
+
+    @staticmethod
+    def _lumen_repr(value: object) -> str:
+        """Convert a runtime value to its Lumen string representation."""
+        if value is True:
+            return "true"
+        if value is False:
+            return "false"
+        if value is None:
+            return "null"
+        # Integers that are whole floats: 2.0 -> 2
+        if isinstance(value, float) and value == int(value):
+            return str(int(value))
+        return str(value)
+
+    @staticmethod
     def _native_print(*values: object) -> None:
-        print(*values)
+        print(*[VM._lumen_repr(v) for v in values])
         return None
