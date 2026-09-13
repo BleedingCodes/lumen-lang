@@ -66,8 +66,11 @@ class Compiler:
                 index = self.chunk.add_constant(statement.name)
                 self.chunk.emit(Op.DEFINE_GLOBAL, index)
             else:
-                self._declare_local(statement.name)
+                # Compile initializer BEFORE declaring the local so that the
+                # right-hand side can reference an outer variable of the same
+                # name (shadowing).  The pushed value becomes the local's slot.
                 self._expr(statement.initializer)
+                self._declare_local(statement.name)
 
         elif isinstance(statement, ast.BlockStmt):
             self._begin_scope()
