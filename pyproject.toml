@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lumen-lang"
-version = "0.1.0"
+version = "0.1.1"
 description = "A small compiled programming language with a bytecode virtual machine"
 authors = [{name = "Michael Rivera", email = "mr.mainbytelabs@gmail.com"}]
 requires-python = ">=3.11"
