@@ -124,29 +124,57 @@ class VM:
                 self.stack.append(a == b)
             elif op is Op.GREATER:
                 b, a = self.stack.pop(), self.stack.pop()
-                self.stack.append(a > b)
+                try:
+                    self.stack.append(a > b)
+                except TypeError as exc:
+                    raise VMError(str(exc)) from exc
             elif op is Op.LESS:
                 b, a = self.stack.pop(), self.stack.pop()
-                self.stack.append(a < b)
+                try:
+                    self.stack.append(a < b)
+                except TypeError as exc:
+                    raise VMError(str(exc)) from exc
             elif op is Op.ADD:
                 b, a = self.stack.pop(), self.stack.pop()
-                self.stack.append(a + b)
+                try:
+                    self.stack.append(a + b)
+                except TypeError as exc:
+                    raise VMError(str(exc)) from exc
             elif op is Op.SUBTRACT:
                 b, a = self.stack.pop(), self.stack.pop()
-                self.stack.append(a - b)
+                try:
+                    self.stack.append(a - b)
+                except TypeError as exc:
+                    raise VMError(str(exc)) from exc
             elif op is Op.MULTIPLY:
                 b, a = self.stack.pop(), self.stack.pop()
-                self.stack.append(a * b)
+                try:
+                    self.stack.append(a * b)
+                except TypeError as exc:
+                    raise VMError(str(exc)) from exc
             elif op is Op.DIVIDE:
                 b, a = self.stack.pop(), self.stack.pop()
-                self.stack.append(a / b)
+                try:
+                    self.stack.append(a / b)
+                except ZeroDivisionError:
+                    raise VMError("Division by zero.")
+                except TypeError as exc:
+                    raise VMError(str(exc)) from exc
             elif op is Op.MODULO:
                 b, a = self.stack.pop(), self.stack.pop()
-                self.stack.append(a % b)
+                try:
+                    self.stack.append(a % b)
+                except ZeroDivisionError:
+                    raise VMError("Modulo by zero.")
+                except TypeError as exc:
+                    raise VMError(str(exc)) from exc
             elif op is Op.NOT:
                 self.stack.append(not self._truthy(self.stack.pop()))
             elif op is Op.NEGATE:
-                self.stack.append(-self.stack.pop())
+                try:
+                    self.stack.append(-self.stack.pop())
+                except TypeError as exc:
+                    raise VMError(str(exc)) from exc
 
             elif op is Op.JUMP:
                 frame.ip = operand
@@ -196,16 +224,27 @@ class VM:
                     del self.stack[-operand:]
                 self.stack.append(list(items))
             elif op is Op.BUILD_DICT:
-                result = {}
+                # Pairs were pushed left-to-right; pop in reverse to restore
+                # original order, then insert forward so last key wins (standard
+                # dict semantics: {\"a\": 1, \"a\": 3}[\"a\"] == 3).
+                pairs: list[tuple[object, object]] = []
                 for _ in range(operand):
                     value = self.stack.pop()
                     key = self.stack.pop()
+                    pairs.append((key, value))
+                result = {}
+                for key, value in reversed(pairs):
                     result[key] = value
                 self.stack.append(result)
             elif op is Op.INDEX:
                 index = self.stack.pop()
                 collection = self.stack.pop()
-                self.stack.append(collection[index])
+                try:
+                    self.stack.append(collection[index])
+                except (IndexError, KeyError) as exc:
+                    raise VMError(str(exc)) from exc
+                except TypeError as exc:
+                    raise VMError(str(exc)) from exc
             else:
                 raise VMError(f"Unknown opcode {op!r}.")
 
@@ -287,6 +326,17 @@ class VM:
         # Integers that are whole floats: 2.0 -> 2
         if isinstance(value, float) and value == int(value):
             return str(int(value))
+        # Recursively format list and dict so nested booleans/null use Lumen
+        # spellings rather than Python's True/False/None.
+        if isinstance(value, list):
+            inner = ", ".join(VM._lumen_repr(item) for item in value)
+            return f"[{inner}]"
+        if isinstance(value, dict):
+            pairs = ", ".join(
+                f"{VM._lumen_repr(k)}: {VM._lumen_repr(v)}"
+                for k, v in value.items()
+            )
+            return "{" + pairs + "}"
         return str(value)
 
     @staticmethod
