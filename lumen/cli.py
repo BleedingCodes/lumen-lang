@@ -32,7 +32,7 @@ def run_file(path: Path, *, disasm: bool, trace: bool) -> int:
 
 
 def repl(*, trace: bool) -> int:
-    print("Lumen 0.1.0 — Ctrl-D to exit")
+    print("Lumen 0.1.1 — Ctrl-D to exit")
     vm = VM(trace=trace)
 
     while True:
