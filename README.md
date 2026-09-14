@@ -16,7 +16,7 @@ Built with AI assistance as a learning exercise in language implementation.
 Lumen is a dynamically typed, expression-oriented language with:
 
 - **Lexer** — hand-written scanner with line/column tracking and clean error reporting
-- **Pratt parser** — top-down operator precedence parsing, the same technique used in production language implementations
+- **Recursive-descent parser** — explicit precedence-climbing methods, one per operator level, cover the full grammar
 - **AST** — typed node hierarchy covering all language constructs
 - **Bytecode compiler** — tree-walk compiler that emits a compact instruction set
 - **Stack-based VM** — executes bytecode with a call stack, upvalue capture, and native function dispatch
@@ -227,13 +227,12 @@ all verified against exact output from the VM.
 
 ---
 
-## Why Pratt Parsing
+## Parser Design
 
-A Pratt parser (top-down operator precedence) handles operator associativity
-and precedence cleanly without grammar rules for every precedence level. Each
-token type carries its own binding power and parse functions. It's the same
-technique used in production implementations including V8 (JavaScript) and
-rustc (Rust) — compact, readable, and easy to extend with new operators.
+The parser uses recursive descent with explicit precedence-climbing methods
+(`_equality`, `_comparison`, `_term`, `_factor`, `_unary`). Each method
+handles one precedence level and calls the next — standard, readable, and
+easy to extend with new operators or precedence levels.
 
 ---
 
