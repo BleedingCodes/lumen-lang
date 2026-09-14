@@ -109,7 +109,9 @@ class Lexer:
                     '"': '"',
                     "\\": "\\",
                 }
-                chars.append(escapes.get(escape, escape))
+                if escape not in escapes:
+                    self._error(f"Unknown escape sequence '\\\\{escape}'.")
+                chars.append(escapes[escape])
             else:
                 if char == "\n":
                     self.line += 1
