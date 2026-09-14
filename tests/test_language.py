@@ -144,5 +144,62 @@ class LanguageTests(unittest.TestCase):
         self.assertEqual(output, "false")
 
 
+    # --- Tests for patched bugs (v0.1.1) ---
+
+    def test_dict_duplicate_key_last_wins(self):
+        """Duplicate dict keys must resolve to the last value (standard semantics)."""
+        output = self.run_program('let d = {"a": 1, "b": 2, "a": 3}; print(d["a"]);')
+        self.assertEqual(output, "3")
+
+    def test_division_by_zero_raises_vm_error(self):
+        """Division by zero must raise VMError, not a bare Python ZeroDivisionError."""
+        from lumen.vm import VMError
+        with self.assertRaises(VMError):
+            self.run_program("print(1 / 0);")
+
+    def test_modulo_by_zero_raises_vm_error(self):
+        """Modulo by zero must raise VMError, not a bare Python ZeroDivisionError."""
+        from lumen.vm import VMError
+        with self.assertRaises(VMError):
+            self.run_program("print(5 % 0);")
+
+    def test_type_error_arithmetic_raises_vm_error(self):
+        """Type mismatch in arithmetic must raise VMError, not a bare Python TypeError."""
+        from lumen.vm import VMError
+        with self.assertRaises(VMError):
+            self.run_program('print(1 + "a");')
+
+    def test_index_out_of_bounds_raises_vm_error(self):
+        """Out-of-bounds list access must raise VMError, not a bare Python IndexError."""
+        from lumen.vm import VMError
+        with self.assertRaises(VMError):
+            self.run_program("let xs = [1, 2, 3]; print(xs[10]);")
+
+    def test_dict_missing_key_raises_vm_error(self):
+        """Missing dict key must raise VMError, not a bare Python KeyError."""
+        from lumen.vm import VMError
+        with self.assertRaises(VMError):
+            self.run_program('let d = {"a": 1}; print(d["b"]);')
+
+    def test_print_list_with_booleans_and_null(self):
+        """List contents must print with Lumen spellings, not Python True/False/None."""
+        output = self.run_program("print([true, false, null]);")
+        self.assertEqual(output, "[true, false, null]")
+
+    def test_print_dict_with_boolean_value(self):
+        """Dict values must print with Lumen spellings.
+        String keys print without surrounding quotes — consistent with how
+        print("hello") outputs hello, not "hello".
+        """
+        output = self.run_program('print({"k": true});')
+        self.assertEqual(output, "{k: true}")
+
+    def test_unknown_escape_raises_lex_error(self):
+        """An unknown escape sequence must raise LexError, not silently pass through."""
+        from lumen.lexer import LexError
+        with self.assertRaises(LexError):
+            self.run_program(r'print("a\zb");')
+
+
 if __name__ == "__main__":
     unittest.main()
